@@ -41,6 +41,34 @@ void euler(state &s, double dt, double t_max, std::ofstream &outFile) {
     }
 }
 
+// Второй метод Рунге-Кутты 3-го порядка (Хойна)
+void rk3_heun(state &s, double dt, double t_max, std::ofstream &outFile) {
+    double t = 0.0;
+    while (t < t_max) {
+        outFile << s[0] << "," << s[1] << "," << s[2] << "," << t << "\n";
+        state k1, k2, k3, s_temp;
+
+        // k1 = f(s)
+        rossler_derivatives(s, k1);
+        for (int i = 0; i < 3; i++) k1[i] *= dt;
+
+        // k2 = f(s + k1/3)
+        for (int i = 0; i < 3; i++) s_temp[i] = s[i] + k1[i] / 3;
+        rossler_derivatives(s_temp, k2);
+        for (int i = 0; i < 3; i++) k2[i] *= dt;
+
+        // k3 = f(s + 2k2/3)
+        for (int i = 0; i < 3; i++) s_temp[i] = s[i] + 2 * k2[i] / 3;
+        rossler_derivatives(s_temp, k3);
+        for (int i = 0; i < 3; i++) k3[i] *= dt;
+
+        // Обновление: s = s + (k1 + 3k3)/4
+        for (int i = 0; i < 3; i++) s[i] += (k1[i] + 3 * k3[i]) / 4;
+
+        t += dt;
+    }
+}
+
 // Метод Рунге-Кутты 4-го порядка
 void rk4(state &s, double dt, double t_max, std::ofstream &outFile) {
     double t = 0.0;
@@ -131,16 +159,9 @@ void dopri5(state &s, double dt, double t_max, std::ofstream &outFile) {
 
 int main() {
     // Начальные условия
-    state s = {0.1, 0.1, 0.1};
-    double dt = 0.01;  // Шаг по времени
-    double t_max = 500.0;  // Максимальное время
-
-    // Открытие файла для записи данных РК4
-    std::ofstream outFileRK4("rk4_trajectory.csv");
-    outFileRK4 << "x,y,z,t\n"; // Заголовки столбцов для CSV
-
-    // Решение системы Рёсслера методом РК4 для одной траектории
-    rk4(s, dt, t_max, outFileRK4);
+    state s = {1, 1, 1};
+    double dt = 0.001;  // Шаг по времени
+    double t_max = 300.0;  // Максимальное время
 
     // Открытие файла для записи данных Допри-5
     std::ofstream outFileDopri5("dopri5_trajectory.csv");
@@ -149,6 +170,23 @@ int main() {
     // Решение системы Рёсслера методом Допри-5
     dopri5(s, dt, t_max, outFileDopri5);
 
+    s = {1, 1, 1};
+    // Открытие файла для записи данных РК4
+    std::ofstream outFileRK4("rk4_trajectory.csv");
+    outFileRK4 << "x,y,z,t\n"; // Заголовки столбцов для CSV
+
+    // Решение системы Рёсслера методом РК4 для одной траектории
+    rk4(s, dt, t_max, outFileRK4);
+
+    s = {1, 1, 1};
+    // Открытие файла для записи данных Хойна 3 порядка
+    std::ofstream outFileRK3Heun("rk3_heun_trajectory.csv");
+    outFileRK3Heun << "x,y,z,t\n";
+
+    // Решение системы Рёсслера методом Хойна
+    rk3_heun(s, dt, t_max, outFileRK3Heun);
+
+    s = {1, 1, 1};
     // Открытие файла для записи данных Эйлера
     std::ofstream outFileEuler("euler_trajectory.csv");
     outFileEuler << "x,y,z,t\n"; // Заголовки столбцов для CSV
@@ -157,9 +195,11 @@ int main() {
     euler(s, dt, t_max, outFileEuler);
 
     // Закрытие файлов
+    outFileEuler.close();
     outFileRK4.close();
+    outFileRK3Heun.close();
     outFileDopri5.close();
 
-    std::cout << "Данные сохранены в файлы rk4_trajectory.csv и dopri5_trajectory.csv и euler_trajectory.csv\n";
+    std::cout << "Данные сохранены в файлы rk4_trajectory.csv и dopri5_trajectory.csv и euler_trajectory.csv и rk3_heun_trajectory.csv\n";
     return 0;
 }
